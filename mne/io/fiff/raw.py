@@ -18,15 +18,16 @@ from ..meas_info import read_meas_info
 from ..tree import dir_tree_find
 from ..tag import read_tag, read_tag_info
 from ..proj import make_eeg_average_ref_proj, _needs_eeg_average_ref_proj
-from ..base import (_BaseRaw, _RawShell, _check_raw_compatibility,
+from ..base import (BaseRaw, _RawShell, _check_raw_compatibility,
                     _check_maxshield)
 from ..utils import _mult_cal_one
 
 from ...annotations import Annotations, _combine_annotations
+from ...event import AcqParserFIF
 from ...utils import check_fname, logger, verbose, warn
 
 
-class Raw(_BaseRaw):
+class Raw(BaseRaw):
     """Raw data in FIF format.
 
     Parameters
@@ -59,7 +60,7 @@ class Raw(_BaseRaw):
     Attributes
     ----------
     info : dict
-        Measurement info.
+        :class:`Measurement info <mne.io.info>`.
     ch_names : list of string
         List of channels' names.
     n_times : int
@@ -413,6 +414,18 @@ class Raw(_BaseRaw):
         from ...channels import fix_mag_coil_types
         fix_mag_coil_types(self.info)
         return self
+
+    @property
+    def acqparser(self):
+        """The AcqParserFIF for the measurement info.
+
+        See Also
+        --------
+        mne.AcqParserFIF
+        """
+        if getattr(self, '_acqparser', None) is None:
+            self._acqparser = AcqParserFIF(self.info)
+        return self._acqparser
 
 
 def _check_entry(first, nent):

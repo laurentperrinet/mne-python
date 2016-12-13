@@ -809,8 +809,8 @@ def make_fixed_length_events(raw, id, start=0, stop=None, duration=1.,
     new_events : array
         The new events.
     """
-    from .io.base import _BaseRaw
-    if not isinstance(raw, _BaseRaw):
+    from .io.base import BaseRaw
+    if not isinstance(raw, BaseRaw):
         raise ValueError('Input data must be an instance of Raw, got'
                          ' %s instead.' % (type(raw)))
     if not isinstance(id, int):
@@ -916,6 +916,10 @@ class AcqParserFIF(object):
         Flatness rejection criteria from DACQ that can be used with mne.Epochs.
     acq_dict : dict
         All DACQ parameters.
+
+    See Also
+    --------
+    mne.io.Raw.acqparser : access the parser through a Raw attribute
 
     Notes
     -----

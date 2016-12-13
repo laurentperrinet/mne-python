@@ -16,7 +16,7 @@ from ...utils import logger, verbose, sum_squared
 from ...transforms import (combine_transforms, invert_transform, apply_trans,
                            Transform)
 from ..constants import FIFF
-from .. import _BaseRaw, _coil_trans_to_loc, _loc_to_coil_trans, _empty_info
+from .. import BaseRaw, _coil_trans_to_loc, _loc_to_coil_trans, _empty_info
 from ..utils import _mult_cal_one, read_str
 from .constants import BTI
 from .read import (read_int32, read_int16, read_float, read_double,
@@ -963,7 +963,7 @@ def _correct_trans(t):
     return t
 
 
-class RawBTi(_BaseRaw):
+class RawBTi(BaseRaw):
     """Raw object from 4D Neuroimaging MagnesWH3600 data.
 
     Parameters
@@ -1208,7 +1208,7 @@ def _get_bti_info(pdf_fname, config_fname, head_shape_fname, rotation_x,
 
         elif chan_4d.startswith('M'):
             chan_info['kind'] = FIFF.FIFFV_REF_MEG_CH
-            chan_info['coil_type'] = FIFF.FIFFV_COIL_MAGNES_R_MAG
+            chan_info['coil_type'] = FIFF.FIFFV_COIL_MAGNES_REF_MAG
             chan_info['coord_frame'] = meg_frame
             chan_info['unit'] = FIFF.FIFF_UNIT_T
 
@@ -1217,9 +1217,10 @@ def _get_bti_info(pdf_fname, config_fname, head_shape_fname, rotation_x,
             chan_info['coord_frame'] = meg_frame
             chan_info['unit'] = FIFF.FIFF_UNIT_T_M
             if chan_4d in ('GxxA', 'GyyA'):
-                chan_info['coil_type'] = FIFF.FIFFV_COIL_MAGNES_R_GRAD_DIA
+                chan_info['coil_type'] = FIFF.FIFFV_COIL_MAGNES_REF_GRAD
             elif chan_4d in ('GyxA', 'GzxA', 'GzyA'):
-                chan_info['coil_type'] = FIFF.FIFFV_COIL_MAGNES_R_GRAD_OFF
+                chan_info['coil_type'] = \
+                    FIFF.FIFFV_COIL_MAGNES_OFFDIAG_REF_GRAD
 
         elif chan_4d.startswith('EEG'):
             chan_info['kind'] = FIFF.FIFFV_EEG_CH

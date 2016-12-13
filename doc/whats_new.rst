@@ -15,6 +15,8 @@ Current
 Changelog
 ~~~~~~~~~
 
+    - Add Support for Artemis123 infant/toddler MEG by `Luke Bloy`_
+
     - Add filter plotting functions :func:`mne.viz.plot_filter` and :func:`mne.viz.plot_ideal_filter` as well as filter creation function :func:`mne.filter.create_filter` by `Eric Larson`_
 
     - Add 3D thin-plate spline warping with spherical harmonic surface approximations in :class:`mne.transforms.SphericalSurfaceWarp` by `Eric Larson`_
@@ -31,12 +33,21 @@ Changelog
 
     - Remove MNE-C requirement for :ref:`mne make_scalp_surfaces <gen_mne_make_scalp_surfaces>` by `Eric Larson`_
 
+    - Add support for FastTrack Polhemus ``.mat`` file outputs in ``hsp`` argument of :func:`mne.channels.read_dig_montage` by `Eric Larson`_
+
     - Add option to convert 3d electrode plots to a snapshot with 2d electrode positions with :func:`mne.viz.snapshot_brain_montage` by `Chris Holdgraf`_
 
     - Add skull surface plotting option to :func:`mne.viz.plot_trans` by `Jaakko Leppakangas`_
 
+    - Add minimum-phase filtering option in :meth:`mne.io.Raw.filter` by `Eric Larson`_
+
+    - Add support for reading ASCII BrainVision files in :func:`mne.io.read_raw_brainvision` by `Eric Larson`_
+
+    - Add option to plot events in :func:`mne.viz.plot_epochs` by `Jaakko Leppakangas`_
+
 BUG
 ~~~
+    - Fix reading multi-file CTF recordings in :class:`mne.io.ctf.RawCTF` by `Niklas Wilming`_
 
     - Fix computation of AR coefficients across channels in :func:`mne.time_frequency.fit_iir_model_raw` by `Eric Larson`_
 
@@ -54,6 +65,8 @@ BUG
 
     - Fix channel name comparison in :func:`mne.read_montage` so that if ``ch_names`` is provided, the returned montage will have channel names in the same letter case by `Jaakko Leppakangas`_
 
+    - Fix :meth:`inst.set_montage(montage) <mne.io.Raw.set_montage>` to only set ``inst.info['dev_head_t']`` if ``dev_head_t=True`` in :func:`mne.channels.read_dig_montage` by `Eric Larson`_
+
     - Fix handling of events in :class:`mne.realtime.RtEpochs` when the triggers were split between two buffers resulting in missing and/or duplicate epochs by `Mainak Jas`_ and `Antti Rantala`_
 
     - Fix bug with automatic decimation in :func:`mne.io.read_raw_kit` by `Keith Doelling`_
@@ -61,6 +74,14 @@ BUG
     - Fix bug with :func:`mne.setup_volume_source_space` where arguments ``subject`` and ``subjects_dir`` were ignored by `Jaakko Leppakangas`_
 
     - Fix sanity check for incompatible ``threshold`` and ``tail`` values in clustering functions like :func:`mne.stats.spatio_temporal_cluster_1samp_test` by `Eric Larson`_
+
+    - Fix ``_bad_dropped`` not being set when loading eeglab epoched files via :func:`mne.io.eeglab.read_epochs_eeglab` which resulted in ``len()`` not working for :class:`mne.io.eeglab.EpochsEEGLAB`; by `Mikołaj Magnuski`_
+
+    - Fix a bug in :meth:`mne.time_frequency.AverageTFR.plot` when plotting without a colorbar by `Jaakko Leppakangas`_
+
+    - Fix ``_filenames`` attribute in creation of :class:`mne.io.RawArray` with :func:`mne.preporcessing.ica._sources_as_raw` by `Paul Pasler`_
+
+    - Fix contour levels in :func:`mne.viz.plot_evoked_topomap` to be uniform across topomaps by `Jaakko Leppakangas`_
 
 API
 ~~~
@@ -72,6 +93,8 @@ API
     - The ``ch_type`` argument for :func:`mne.viz.plot_trans` has been deprecated, use ``eeg_sensors`` and ``meg_sensors`` instead, by `Eric Larson`_
 
     - The default ``tmax=60.`` in :meth:`mne.io.Raw.plot_psd` will change to ``tmax=np.inf`` in 0.15, by `Eric Larson`_
+
+    - Base classes :class:`mne.io.BaseRaw` and :class:`mne.BaseEpochs` are now public to allow easier typechecking, by `Daniel McCloy`_
 
 .. _changes_0_13:
 
@@ -144,6 +167,8 @@ Changelog
     - Added support for reading MaxShield (IAS) evoked data (e.g., from the acquisition machine) in :func:`mne.read_evokeds` by `Eric Larson`_
 
     - Added support for functional near-infrared spectroscopy (fNIRS) channels by `Jaakko Leppakangas`_
+
+    - Added :attr:`mne.io.Raw.acqparser` convenience attribute for :class:`mne.AcqParserFIF` by `Eric Larson`_
 
 BUG
 ~~~
@@ -1886,3 +1911,7 @@ of commits):
 .. _Antti Rantala: https://github.com/Odingod
 
 .. _Keith Doelling: http://science.keithdoelling.com
+
+.. _Paul Pasler: https://github.com/ppasler
+
+.. _Niklas Wilming: https://github.com/nwilming

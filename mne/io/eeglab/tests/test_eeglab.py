@@ -6,7 +6,7 @@ import os.path as op
 import shutil
 
 import warnings
-from nose.tools import assert_raises, assert_equal
+from nose.tools import assert_raises, assert_equal, assert_true
 import numpy as np
 from numpy.testing import assert_array_equal
 
@@ -32,15 +32,16 @@ warnings.simplefilter('always')  # enable b/c these tests throw warnings
 def test_io_set():
     """Test importing EEGLAB .set files"""
     from scipy import io
-    with warnings.catch_warnings(record=True) as w1:
+    with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
         # main tests, and test missing event_id
         _test_raw_reader(read_raw_eeglab, input_fname=raw_fname,
                          montage=montage)
         _test_raw_reader(read_raw_eeglab, input_fname=raw_fname_onefile,
                          montage=montage)
-        assert_equal(len(w1), 20)
-        # f3 or preload_false and a lot for dropping events
+    for want in ('Events like', 'consist entirely', 'could not be mapped',
+                 'string preload is not supported'):
+        assert_true(any(want in str(ww.message) for ww in w))
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
         # test finding events in continuous data
@@ -65,7 +66,7 @@ def test_io_set():
         raw0.filter(1, None, l_trans_bandwidth='auto', filter_length='auto',
                     phase='zero')  # test that preloading works
 
-    # test that using uin16_codec does not break stuff
+    # test that using uint16_codec does not break stuff
     raw0 = read_raw_eeglab(input_fname=raw_fname, montage=montage,
                            event_id=event_id, preload=False,
                            uint16_codec='ascii')
@@ -96,6 +97,8 @@ def test_io_set():
 
     epochs = read_epochs_eeglab(epochs_fname, epochs.events, event_id)
     assert_equal(len(epochs.events), 4)
+    assert_true(epochs.preload)
+    assert_true(epochs._bad_dropped)
     epochs = read_epochs_eeglab(epochs_fname, out_fname, event_id)
     assert_raises(ValueError, read_epochs_eeglab, epochs_fname,
                   None, event_id)

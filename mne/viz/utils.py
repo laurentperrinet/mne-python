@@ -1045,33 +1045,34 @@ def _find_peaks(evoked, npeaks):
     return times
 
 
-def _process_times(inst, times, n_peaks=None, few=False):
+def _process_times(inst, use_times, n_peaks=None, few=False):
     """Helper to return a list of times for topomaps."""
-    if isinstance(times, string_types):
-        if times == "peaks":
+    if isinstance(use_times, string_types):
+        if use_times == "peaks":
             if n_peaks is None:
-                n_peaks = 3 if few else 7
-            times = _find_peaks(inst, n_peaks)
-        elif times == "auto":
+                n_peaks = min(3 if few else 7, len(inst.times))
+            use_times = _find_peaks(inst, n_peaks)
+        elif use_times == "auto":
             if n_peaks is None:
-                n_peaks = 5 if few else 10
-            times = np.linspace(inst.times[0], inst.times[-1], n_peaks)
+                n_peaks = min(5 if few else 10, len(use_times))
+            use_times = np.linspace(inst.times[0], inst.times[-1], n_peaks)
         else:
             raise ValueError("Got an unrecognized method for `times`. Only "
                              "'peaks' and 'auto' are supported (or directly "
                              "passing numbers).")
-    elif np.isscalar(times):
-        times = [times]
+    elif np.isscalar(use_times):
+        use_times = [use_times]
 
-    times = np.array(times)
+    use_times = np.array(use_times, float)
 
-    if times.ndim != 1:
-        raise ValueError('times must be 1D, got %d dimensions' % times.ndim)
-    if len(times) > 20:
+    if use_times.ndim != 1:
+        raise ValueError('times must be 1D, got %d dimensions'
+                         % use_times.ndim)
+    if len(use_times) > 20:
         raise RuntimeError('Too many plots requested. Please pass fewer '
                            'than 20 time instants.')
 
-    return times
+    return use_times
 
 
 def plot_sensors(info, kind='topomap', ch_type=None, title=None,
@@ -1329,9 +1330,9 @@ def _compute_scalings(scalings, inst):
     scalings : dict
         A scalings dictionary with updated values
     """
-    from ..io.base import _BaseRaw
-    from ..epochs import _BaseEpochs
-    if not isinstance(inst, (_BaseRaw, _BaseEpochs)):
+    from ..io.base import BaseRaw
+    from ..epochs import BaseEpochs
+    if not isinstance(inst, (BaseRaw, BaseEpochs)):
         raise ValueError('Must supply either Raw or Epochs')
     if scalings is None:
         # If scalings is None just return it and do nothing
@@ -1349,7 +1350,7 @@ def _compute_scalings(scalings, inst):
     scalings = deepcopy(scalings)
 
     if inst.preload is False:
-        if isinstance(inst, _BaseRaw):
+        if isinstance(inst, BaseRaw):
             # Load a window of data from the center up to 100mb in size
             n_times = 1e8 // (len(inst.ch_names) * 8)
             n_times = np.clip(n_times, 1, inst.n_times)
@@ -1358,7 +1359,7 @@ def _compute_scalings(scalings, inst):
             tmin = np.clip(time_middle - n_secs / 2., inst.times.min(), None)
             tmax = np.clip(time_middle + n_secs / 2., None, inst.times.max())
             data = inst._read_segment(tmin, tmax)
-        elif isinstance(inst, _BaseEpochs):
+        elif isinstance(inst, BaseEpochs):
             # Load a random subset of epochs up to 100mb in size
             n_epochs = 1e8 // (len(inst.ch_names) * len(inst.times) * 8)
             n_epochs = int(np.clip(n_epochs, 1, len(inst)))
@@ -1366,7 +1367,7 @@ def _compute_scalings(scalings, inst):
             inst = inst.copy()[ixs_epochs].load_data()
     else:
         data = inst._data
-    if isinstance(inst, _BaseEpochs):
+    if isinstance(inst, BaseEpochs):
         data = inst._data.reshape([len(inst.ch_names), -1])
     # Iterate through ch types and update scaling if ' auto'
     for key, value in scalings.items():

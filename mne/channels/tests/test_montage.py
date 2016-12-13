@@ -8,6 +8,8 @@ import warnings
 from nose.tools import assert_equal, assert_true, assert_raises
 
 import numpy as np
+from scipy.io import savemat
+
 from numpy.testing import (assert_array_equal, assert_almost_equal,
                            assert_allclose, assert_array_almost_equal,
                            assert_array_less)
@@ -40,51 +42,73 @@ bv_fname = op.join(io_dir, 'brainvision', 'tests', 'data', 'test.vhdr')
 def test_montage():
     """Test making montages."""
     tempdir = _TempDir()
-    # no pep8
-    input_str = [
-        'FidNz 0.00000 10.56381 -2.05108\nFidT9 -7.82694 0.45386 -3.76056\n'
-        'very_very_very_long_name 7.82694 0.45386 -3.76056\nDmy 7.0 0.0 1.0',
-        '// MatLab   Sphere coordinates [degrees]         Cartesian coordinates\n'  # noqa: E501
-        '// Label       Theta       Phi    Radius         X         Y         Z       off sphere surface\n'  # noqa: E501
-        'E1      37.700     -14.000       1.000    0.7677    0.5934   -0.2419  -0.00000000000000011\n'  # noqa: E501
-        'E2      44.600      -0.880       1.000    0.7119    0.7021   -0.0154   0.00000000000000000\n'  # noqa: E501
-        'E3      51.700      11.000       1.000    0.6084    0.7704    0.1908   0.00000000000000000\n'  # noqa: E501
-        'E4      52.700      12.000       1.000    0.7084    0.7504    0.1508   0.00000000000000000',  # noqa: E501; dummy line
-        '# ASA electrode file\nReferenceLabel  avg\nUnitPosition    mm\n'
-        'NumberPositions=    68\nPositions\n-86.0761 -19.9897 -47.9860\n'
-        '85.7939 -20.0093 -48.0310\n0.0083 86.8110 -39.9830\n'
-        '85 -20 -48\n'
-        'Labels\nLPA\nRPA\nNz\nDummy\n',
-        '# ASA electrode file\nReferenceLabel  avg\nUnitPosition    m\n'
-        'NumberPositions=    68\nPositions\n-.0860761 -.0199897 -.0479860\n'
-        '.0857939 -.0200093 -.0480310\n.0000083 .00868110 -.0399830\n'
-        '.08 -.02 -.04\n'
-        'Labels\nLPA\nRPA\nNz\nDummy\n',
-        'Site  Theta  Phi\nFp1  -92    -72\nFp2   92     72\n'
-        'very_very_very_long_name   -60    -51\n'
-        'dummy -60 -52\n',
-        '346\n'
-        'EEG\t      F3\t -62.027\t -50.053\t      85\n'
-        'EEG\t      Fz\t  45.608\t      90\t      85\n'
-        'EEG\t      F4\t   62.01\t  50.103\t      85\n'
-        'EEG\t      FCz\t   68.01\t  58.103\t      85\n',
-        'eeg Fp1 -95.0 -3. -3.\neeg AF7 -1 -1 -3\neeg A3 -2 -2 2\neeg A 0 0 0'
-    ]
-
-    kinds = ['test.sfp', 'test.csd', 'test_mm.elc', 'test_m.elc', 'test.txt',
-             'test.elp', 'test.hpts']
-    for kind, text in zip(kinds, input_str):
-        fname = op.join(tempdir, kind)
+    inputs = dict(
+        sfp='FidNz 0       9.071585155     -2.359754454\n'
+            'FidT9 -6.711765       0.040402876     -3.251600355\n'
+            'very_very_very_long_name -5.831241498 -4.494821698  4.955347697\n'
+            'Cz 0       0       8.899186843',
+        csd='// MatLab   Sphere coordinates [degrees]         Cartesian coordinates\n'  # noqa: E501
+            '// Label       Theta       Phi    Radius         X         Y         Z       off sphere surface\n'  # noqa: E501
+            'E1      37.700     -14.000       1.000    0.7677    0.5934   -0.2419  -0.00000000000000011\n'  # noqa: E501
+            'E3      51.700      11.000       1.000    0.6084    0.7704    0.1908   0.00000000000000000\n'  # noqa: E501
+            'E31      90.000     -11.000       1.000    0.0000    0.9816   -0.1908   0.00000000000000000\n'  # noqa: E501
+            'E61     158.000     -17.200       1.000   -0.8857    0.3579   -0.2957  -0.00000000000000022',  # noqa: E501
+        mm_elc='# ASA electrode file\nReferenceLabel  avg\nUnitPosition    mm\n'  # noqa:E501
+               'NumberPositions=    68\n'
+               'Positions\n'
+               '-86.0761 -19.9897 -47.9860\n'
+               '85.7939 -20.0093 -48.0310\n'
+               '0.0083 86.8110 -39.9830\n'
+               '-86.0761 -24.9897 -67.9860\n'
+               'Labels\nLPA\nRPA\nNz\nDummy\n',
+        m_elc='# ASA electrode file\nReferenceLabel  avg\nUnitPosition    m\n'
+              'NumberPositions=    68\nPositions\n-.0860761 -.0199897 -.0479860\n'  # noqa:E501
+              '.0857939 -.0200093 -.0480310\n.0000083 .00868110 -.0399830\n'
+              '.08 -.02 -.04\n'
+              'Labels\nLPA\nRPA\nNz\nDummy\n',
+        txt='Site  Theta  Phi\n'
+            'Fp1  -92    -72\n'
+            'Fp2   92     72\n'
+            'very_very_very_long_name       -92     72\n'
+            'O2        92    -90\n',
+        elp='346\n'
+            'EEG\t      F3\t -62.027\t -50.053\t      85\n'
+            'EEG\t      Fz\t  45.608\t      90\t      85\n'
+            'EEG\t      F4\t   62.01\t  50.103\t      85\n'
+            'EEG\t      FCz\t   68.01\t  58.103\t      85\n',
+        hpts='eeg Fp1 -95.0 -3. -3.\n'
+             'eeg AF7 -1 -1 -3\n'
+             'eeg A3 -2 -2 2\n'
+             'eeg A 0 0 0',
+    )
+    # Get actual positions and save them for checking
+    # csd comes from the string above, all others come from commit 2fa35d4
+    poss = dict(
+        sfp=[[0.0, 9.07159, -2.35975], [-6.71176, 0.0404, -3.2516],
+             [-5.83124, -4.49482, 4.95535], [0.0, 0.0, 8.89919]],
+        mm_elc=[[-0.08608, -0.01999, -0.04799], [0.08579, -0.02001, -0.04803],
+                [1e-05, 0.08681, -0.03998], [-0.08608, -0.02499, -0.06799]],
+        m_elc=[[-0.08608, -0.01999, -0.04799], [0.08579, -0.02001, -0.04803],
+               [1e-05, 0.00868, -0.03998], [0.08, -0.02, -0.04]],
+        txt=[[-26.25044, 80.79056, -2.96646], [26.25044, 80.79056, -2.96646],
+             [-26.25044, -80.79056, -2.96646], [0.0, -84.94822, -2.96646]],
+        elp=[[-48.20043, 57.55106, 39.86971], [0.0, 60.73848, 59.4629],
+             [48.1426, 57.58403, 39.89198], [41.64599, 66.91489, 31.8278]],
+        hpts=[[-95, -3, -3], [-1, -1., -3.], [-2, -2, 2.], [0, 0, 0]],
+    )
+    for key, text in inputs.items():
+        kind = key.split('_')[-1]
+        fname = op.join(tempdir, 'test.' + kind)
         with open(fname, 'w') as fid:
             fid.write(text)
         montage = read_montage(fname)
-        if ".sfp" in kind or ".txt" in kind:
+        if kind in ('sfp', 'txt'):
             assert_true('very_very_very_long_name' in montage.ch_names)
         assert_equal(len(montage.ch_names), 4)
         assert_equal(len(montage.ch_names), len(montage.pos))
         assert_equal(montage.pos.shape, (4, 3))
-        assert_equal(montage.kind, op.splitext(kind)[0])
-        if kind.endswith('csd'):
+        assert_equal(montage.kind, 'test')
+        if kind == 'csd':
             dtype = [('label', 'S4'), ('theta', 'f8'), ('phi', 'f8'),
                      ('radius', 'f8'), ('x', 'f8'), ('y', 'f8'), ('z', 'f8'),
                      ('off_sph', 'f8')]
@@ -92,9 +116,8 @@ def test_montage():
                 table = np.loadtxt(fname, skip_header=2, dtype=dtype)
             except TypeError:
                 table = np.loadtxt(fname, skiprows=2, dtype=dtype)
-            pos2 = np.c_[table['x'], table['y'], table['z']]
-            assert_array_almost_equal(pos2[:-1, :], montage.pos[:-1, :], 4)
-        if kind.endswith('elc'):
+            poss['csd'] = np.c_[table['x'], table['y'], table['z']]
+        if kind == 'elc':
             # Make sure points are reasonable distance from geometric centroid
             centroid = np.sum(montage.pos, axis=0) / montage.pos.shape[0]
             distance_from_centroid = np.apply_along_axis(
@@ -102,6 +125,7 @@ def test_montage():
                 montage.pos - centroid)
             assert_array_less(distance_from_centroid, 0.2)
             assert_array_less(0.01, distance_from_centroid)
+        assert_array_almost_equal(poss[key], montage.pos, 4, err_msg=key)
 
     # Test reading in different letter case.
     ch_names = ["F3", "FZ", "F4", "FC3", "FCz", "FC4", "C3", "CZ", "C4", "CP3",
@@ -118,8 +142,7 @@ def test_montage():
     cardinal 1 0 -91 -42
     cardinal 3 0 91 -42
     """
-    kind = 'test_fid.hpts'
-    fname = op.join(tempdir, kind)
+    fname = op.join(tempdir, 'test_fid.hpts')
     with open(fname, 'w') as fid:
         fid.write(input_str)
     montage = read_montage(op.join(tempdir, 'test_fid.hpts'), transform=True)
@@ -190,7 +213,7 @@ def test_read_dig_montage():
     assert_array_equal(montage.elp, elp_points)
     assert_array_equal(montage.hsp, hsp_points)
     assert_array_equal(montage.hpi, hpi_points)
-    assert_array_equal(montage.dev_head_t, np.identity(4))
+    assert_true(montage.dev_head_t is None)
     montage = read_dig_montage(hsp, hpi, elp, names,
                                transform=True, dev_head_t=True)
     # check coordinate transformation
@@ -212,8 +235,11 @@ def test_read_dig_montage():
                           names)
     assert_allclose(m3.hsp, montage.hsp)
 
-    # test unit parameter
-    montage_cm = read_dig_montage(hsp, hpi, elp, names, unit='cm')
+    # test unit parameter and .mat support
+    tempdir = _TempDir()
+    mat_hsp = op.join(tempdir, 'test.mat')
+    savemat(mat_hsp, dict(Points=(1000 * hsp_points).T))
+    montage_cm = read_dig_montage(mat_hsp, hpi, elp, names, unit='cm')
     assert_allclose(montage_cm.hsp, montage.hsp * 10.)
     assert_allclose(montage_cm.elp, montage.elp * 10.)
     assert_array_equal(montage_cm.hpi, montage.hpi)
@@ -222,48 +248,59 @@ def test_read_dig_montage():
 
 
 def test_set_dig_montage():
-    """Test applying DigMontage to inst
-    """
+    """Test applying DigMontage to inst."""
     # Extensive testing of applying `dig` to info is done in test_meas_info
     # with `test_make_dig_points`.
     names = ['nasion', 'lpa', 'rpa', '1', '2', '3', '4', '5']
     hsp_points = _read_dig_points(hsp)
     elp_points = _read_dig_points(elp)
-    hpi_points = read_mrk(hpi)
-    p0, p1, p2 = elp_points[:3]
-    nm_trans = get_ras_to_neuromag_trans(p0, p1, p2)
+    nasion, lpa, rpa = elp_points[:3]
+    nm_trans = get_ras_to_neuromag_trans(nasion, lpa, rpa)
     elp_points = apply_trans(nm_trans, elp_points)
-    nasion_point, lpa_point, rpa_point = elp_points[:3]
+    nasion, lpa, rpa = elp_points[:3]
     hsp_points = apply_trans(nm_trans, hsp_points)
 
-    montage = read_dig_montage(hsp, hpi, elp, names, transform=True)
-    info = create_info(['Test Ch'], 1e3, ['eeg'])
-    _set_montage(info, montage)
-    hs = np.array([p['r'] for i, p in enumerate(info['dig'])
-                   if p['kind'] == FIFF.FIFFV_POINT_EXTRA])
-    nasion_dig = np.array([p['r'] for p in info['dig']
-                           if all([p['ident'] == FIFF.FIFFV_POINT_NASION,
-                                   p['kind'] == FIFF.FIFFV_POINT_CARDINAL])])
-    lpa_dig = np.array([p['r'] for p in info['dig']
-                        if all([p['ident'] == FIFF.FIFFV_POINT_LPA,
-                                p['kind'] == FIFF.FIFFV_POINT_CARDINAL])])
-    rpa_dig = np.array([p['r'] for p in info['dig']
-                        if all([p['ident'] == FIFF.FIFFV_POINT_RPA,
-                                p['kind'] == FIFF.FIFFV_POINT_CARDINAL])])
-    hpi_dig = np.array([p['r'] for p in info['dig']
-                        if p['kind'] == FIFF.FIFFV_POINT_HPI])
-    assert_array_equal(hs, hsp_points)
-    assert_array_equal(nasion_dig.ravel(), nasion_point)
-    assert_array_equal(lpa_dig.ravel(), lpa_point)
-    assert_array_equal(rpa_dig.ravel(), rpa_point)
-    assert_array_equal(hpi_dig, hpi_points)
-    assert_array_equal(montage.dev_head_t, info['dev_head_t']['trans'])
+    montage = read_dig_montage(hsp, hpi, elp, names, transform=True,
+                               dev_head_t=True)
+    temp_dir = _TempDir()
+    fname_temp = op.join(temp_dir, 'test.fif')
+    montage.save(fname_temp)
+    montage_read = read_dig_montage(fif=fname_temp)
+    for use_mon in (montage, montage_read):
+        info = create_info(['Test Ch'], 1e3, ['eeg'])
+        with warnings.catch_warnings(record=True) as w:  # test ch pos not set
+            _set_montage(info, use_mon)
+        assert_true(all('not set' in str(ww.message) for ww in w))
+        hs = np.array([p['r'] for i, p in enumerate(info['dig'])
+                       if p['kind'] == FIFF.FIFFV_POINT_EXTRA])
+        nasion_dig = np.array([p['r'] for p in info['dig']
+                               if all([p['ident'] == FIFF.FIFFV_POINT_NASION,
+                                       p['kind'] == FIFF.FIFFV_POINT_CARDINAL])
+                               ])
+        lpa_dig = np.array([p['r'] for p in info['dig']
+                            if all([p['ident'] == FIFF.FIFFV_POINT_LPA,
+                                    p['kind'] == FIFF.FIFFV_POINT_CARDINAL])])
+        rpa_dig = np.array([p['r'] for p in info['dig']
+                            if all([p['ident'] == FIFF.FIFFV_POINT_RPA,
+                                    p['kind'] == FIFF.FIFFV_POINT_CARDINAL])])
+        hpi_dig = np.array([p['r'] for p in info['dig']
+                            if p['kind'] == FIFF.FIFFV_POINT_HPI])
+        assert_allclose(hs, hsp_points, atol=1e-7)
+        assert_allclose(nasion_dig.ravel(), nasion, atol=1e-7)
+        assert_allclose(lpa_dig.ravel(), lpa, atol=1e-7)
+        assert_allclose(rpa_dig.ravel(), rpa, atol=1e-7)
+        assert_allclose(hpi_dig, elp_points[3:], atol=1e-7)
 
 
 @testing.requires_testing_data
 def test_fif_dig_montage():
-    """Test FIF dig montage support"""
+    """Test FIF dig montage support."""
     dig_montage = read_dig_montage(fif=fif_dig_montage_fname)
+
+    # test round-trip IO
+    temp_dir = _TempDir()
+    fname_temp = op.join(temp_dir, 'test.fif')
+    _check_roundtrip(dig_montage, fname_temp)
 
     # Make a BrainVision file like the one the user would have had
     with warnings.catch_warnings(record=True) as w:
@@ -280,19 +317,43 @@ def test_fif_dig_montage():
     raw_bv.drop_channels(['STI 014'])
     raw_bv.add_channels([raw_bv_2])
 
-    # Set the montage
-    raw_bv.set_montage(dig_montage)
+    for ii in range(2):
+        if ii == 1:
+            dig_montage.transform_to_head()  # should have no meaningful effect
 
-    # Check the result
-    evoked = read_evokeds(evoked_fname)[0]
+        # Set the montage
+        raw_bv.set_montage(dig_montage)
 
-    assert_equal(len(raw_bv.ch_names), len(evoked.ch_names))
-    for ch_py, ch_c in zip(raw_bv.info['chs'], evoked.info['chs']):
-        assert_equal(ch_py['ch_name'], ch_c['ch_name'].replace('EEG ', 'EEG'))
-        # C actually says it's unknown, but it's not (?):
-        # assert_equal(ch_py['coord_frame'], ch_c['coord_frame'])
-        assert_equal(ch_py['coord_frame'], FIFF.FIFFV_COORD_HEAD)
-        assert_allclose(ch_py['loc'], ch_c['loc'])
-    assert_dig_allclose(raw_bv.info, evoked.info)
+        # Check the result
+        evoked = read_evokeds(evoked_fname)[0]
+
+        assert_equal(len(raw_bv.ch_names), len(evoked.ch_names))
+        for ch_py, ch_c in zip(raw_bv.info['chs'], evoked.info['chs']):
+            assert_equal(ch_py['ch_name'],
+                         ch_c['ch_name'].replace('EEG ', 'EEG'))
+            # C actually says it's unknown, but it's not (?):
+            # assert_equal(ch_py['coord_frame'], ch_c['coord_frame'])
+            assert_equal(ch_py['coord_frame'], FIFF.FIFFV_COORD_HEAD)
+            assert_allclose(ch_py['loc'], ch_c['loc'], atol=1e-7)
+        assert_dig_allclose(raw_bv.info, evoked.info)
+
+    # Roundtrip of non-FIF start
+    names = ['nasion', 'lpa', 'rpa', '1', '2', '3', '4', '5']
+    montage = read_dig_montage(hsp, hpi, elp, names, transform=False)
+    assert_raises(RuntimeError, montage.save, fname_temp)  # must be head coord
+    montage = read_dig_montage(hsp, hpi, elp, names)
+    _check_roundtrip(montage, fname_temp)
+
+
+def _check_roundtrip(montage, fname):
+    """Check roundtrip writing."""
+    assert_equal(montage.coord_frame, 'head')
+    montage.save(fname)
+    montage_read = read_dig_montage(fif=fname)
+    assert_equal(str(montage), str(montage_read))
+    for kind in ('elp', 'hsp', 'nasion', 'lpa', 'rpa'):
+        assert_allclose(getattr(montage, kind),
+                        getattr(montage_read, kind), err_msg=kind)
+    assert_equal(montage_read.coord_frame, 'head')
 
 run_tests_if_main()
