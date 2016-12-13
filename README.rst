@@ -26,6 +26,9 @@
 `MNE-Python <http://mne-tools.github.io/>`_
 =======================================================
 
+
+>>>> H4CK3R <<<
+
 This package is designed for sensor- and source-space analysis of [M/E]EG
 data, including frequency-domain and time-frequency analyses, MVPA/decoding
 and non-parametric statistics. This package generally evolves quickly and
