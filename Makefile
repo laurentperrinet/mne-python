@@ -1,5 +1,5 @@
 # simple makefile to simplify repetetive build env management tasks under posix
-
+# trop fork!
 # caution: testing won't work on windows, see README
 
 PYTHON ?= python
